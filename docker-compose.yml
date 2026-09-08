@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdf_editor_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - UPLOAD_DIR=/app/uploads
+      - EXPORT_DIR=/app/exports
+      - MAX_FILE_SIZE_MB=50
+      - MAX_PAGES=100
+      - FILE_RETENTION_MINUTES=30
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    volumes:
+      - ./uploads:/app/uploads
+      - ./exports:/app/exports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pdf_editor_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
